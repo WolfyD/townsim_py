@@ -338,36 +338,19 @@ def test_smoothness_levels():
         save_terrain_image(terrain_map, filename)
 
 def compare_with_old_generator():
-    """Compare new generator with old generator."""
+    """Compare performance of advanced generator with different settings."""
     
-    print("\n=== Comparing with Old Generator ===\n")
+    print("\n=== Advanced Generator Performance Test ===\n")
     
     map_size = 512
     random_seed = 42
     
-    # Test old generator
-    print("Testing old generator...")
-    old_params = TerrainParameters(
-        map_size=map_size,
-        random_seed=random_seed,
-        noise_scale=5.0,
-        elevation_variance=0.7
-    )
-    
-    old_generator = TerrainGenerator()
-    start_time = time.time()
-    old_terrain = old_generator.generate_terrain(old_params)
-    old_time = time.time() - start_time
-    
-    print(f"Old generator: {old_time:.2f}s")
-    save_terrain_image(old_terrain, "old_terrain_512x512.png")
-    
-    # Test new generator
-    print("Testing new generator...")
+    # Test advanced generator with different settings
+    print("Testing advanced generator...")
     new_params = AdvancedTerrainParameters(
         map_size=map_size,
         random_seed=random_seed,
-        coastal_type=CoastalType.COASTAL,  # Force coastal for better comparison
+        coastal_type=CoastalType.COASTAL,
         terrain_smoothness=0.3,
         max_lakes=2,
         noise_scale=5.0,
@@ -379,12 +362,20 @@ def compare_with_old_generator():
     new_terrain = new_generator.generate_terrain(new_params)
     new_time = time.time() - start_time
     
-    print(f"New generator: {new_time:.2f}s")
-    save_terrain_image(new_terrain, "new_terrain_512x512.png")
+    print(f"Advanced generator: {new_time:.2f}s")
+    save_terrain_image(new_terrain, "advanced_terrain_512x512.png")
     
-    # Compare performance
-    speedup = old_time / new_time
-    print(f"\nSpeed comparison: New generator is {speedup:.1f}x faster")
+    # Test performance with different map sizes
+    print("\nTesting different map sizes...")
+    for size in [256, 512, 1024]:
+        new_params.map_size = size
+        start_time = time.time()
+        terrain = new_generator.generate_terrain(new_params)
+        elapsed = time.time() - start_time
+        tiles_per_second = (size * size) / elapsed
+        print(f"  {size}x{size}: {elapsed:.2f}s ({tiles_per_second:.0f} tiles/sec)")
+    
+    print(f"\n✅ Advanced generator performance testing complete")
 
 if __name__ == "__main__":
     # Run all tests
