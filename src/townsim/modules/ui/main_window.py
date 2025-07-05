@@ -94,6 +94,23 @@ class MainWindow(QMainWindow):
         terrain_layout.addWidget(QLabel("Coastal Type:"))
         terrain_layout.addWidget(self.coastal_combo)
         
+        # Coastline angle control (for coastal type)
+        from .coastline_angle_control import CoastlineAngleControl
+        self.coastline_angle_control = CoastlineAngleControl()
+        self.coastline_angle_control.setAngle(45.0)  # Default angle
+        self.coastline_angle_control.angleChanged.connect(self._on_coastline_angle_changed)
+        self.coastal_combo.currentTextChanged.connect(self._on_coastal_type_changed)
+        
+        # Add the control with proper layout
+        angle_layout = QHBoxLayout()
+        angle_layout.addWidget(QLabel("Coastline Angle:"))
+        angle_layout.addStretch()
+        terrain_layout.addLayout(angle_layout)
+        terrain_layout.addWidget(self.coastline_angle_control)
+        
+        # Initially hide the angle control (only show for coastal type)
+        self.coastline_angle_control.setVisible(False)
+        
         # Terrain smoothness slider
         from PyQt6.QtWidgets import QSlider, QSpinBox
         self.smoothness_slider = QSlider(Qt.Orientation.Horizontal)
@@ -226,6 +243,21 @@ class MainWindow(QMainWindow):
         if use_random:
             self.seed_input.clear()
     
+    def _on_coastal_type_changed(self, text: str) -> None:
+        """Handle coastal type selection changes."""
+        # Show/hide the coastline angle control based on coastal type
+        is_coastal = text == "Coastal"
+        self.coastline_angle_control.setVisible(is_coastal)
+        
+        if is_coastal:
+            self.logger.debug(f"Coastal type selected - showing angle control (current: {self.coastline_angle_control.angle():.1f}°)")
+        else:
+            self.logger.debug(f"Non-coastal type selected: {text} - hiding angle control")
+    
+    def _on_coastline_angle_changed(self, angle: float) -> None:
+        """Handle coastline angle changes."""
+        self.logger.debug(f"Coastline angle changed to: {angle:.1f}°")
+    
     def _generate_terrain(self) -> None:
         """Generate new terrain."""
         self.logger.info("Generating terrain...")
@@ -271,6 +303,13 @@ class MainWindow(QMainWindow):
                     noise_scale=5.0,
                     elevation_variance=0.7
                 )
+                
+                # If coastal type is selected, use the angle from the control
+                if coastal_type == coastal_type:
+                    coastline_angle = self.coastline_angle_control.angle()
+                    self.logger.debug(f"Using coastline angle: {coastline_angle:.1f}°")
+                    # Store the angle for use in terrain generation
+                    params.coastline_angle = coastline_angle
                 
                 self.logger.debug("Creating advanced generator instance...")
                 generator = AdvancedTerrainGenerator()

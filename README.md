@@ -35,7 +35,7 @@ TownSim Python generates realistic terrain and creates logical city layouts that
 ### Setup
 1. Clone the repository:
 ```bash
-git clone <repository-url>
+git clone https://github.com/WolfyD/townsim_py.git
 cd townsim_py
 ```
 

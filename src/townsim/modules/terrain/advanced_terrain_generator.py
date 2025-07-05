@@ -46,6 +46,7 @@ class AdvancedTerrainParameters(TerrainParameters):
     
     # Step 1: Coastal configuration
     coastal_type: CoastalType = CoastalType.RANDOM
+    coastline_angle: Optional[float] = None  # Override angle for coastal type (0-360°)
     
     # Step 2: Base elevation
     coastal_gradient_min: float = 0.10  # 10% of map
@@ -181,12 +182,18 @@ class AdvancedTerrainGenerator:
         config = {"type": config_type}
         
         if config_type == CoastalType.COASTAL:
-            # Generate a random angled coastline (not just cardinal directions)
-            # Random angle from 0 to 360 degrees
-            coast_angle = random.uniform(0, 360)
+            # Use user-specified angle if provided, otherwise random
+            if params.coastline_angle is not None:
+                coast_angle = params.coastline_angle
+                self.logger.debug(f"Using user-specified coastline angle: {coast_angle:.1f}°")
+            else:
+                # Generate a random angled coastline (not just cardinal directions)
+                coast_angle = random.uniform(0, 360)
+                self.logger.debug(f"Using random coastline angle: {coast_angle:.1f}°")
             
-            # Random position along the angle (how far the coastline cuts into the map)
-            coast_depth = random.uniform(0.15, 0.35)  # 15-35% of map for 10-20% water coverage
+            # Position the coastline to create realistic coastal coverage
+            # Offset the coastline so there's less water (20-30% instead of 50%)
+            coast_depth = random.uniform(-0.4, -0.2)  # Negative = less water
             
             config["coast_angle"] = coast_angle
             config["coast_depth"] = coast_depth
@@ -198,7 +205,7 @@ class AdvancedTerrainGenerator:
                 random.uniform(0.4, 0.6),  # x center (more centered)
                 random.uniform(0.4, 0.6)   # y center (more centered)
             )
-            config["island_size"] = random.uniform(0.25, 0.35)  # radius as fraction of map (smaller to ensure water around edges)
+            config["island_size"] = random.uniform(0.35, 0.40)  # radius as fraction of map (smaller to ensure water around edges)
         
         return config
     
@@ -247,18 +254,20 @@ class AdvancedTerrainGenerator:
         result = elevation.copy()
         
         # Convert angle to radians
+        # At angle 0°: land points north (up), coastline is horizontal
+        # At angle 90°: land points east (right), coastline is vertical
         angle_rad = np.radians(coast_angle)
         
-        # Create the base coastline using the angle
-        # Line equation: ax + by + c = 0
-        # For angle θ, normal vector is (cos(θ), sin(θ))
-        normal_x = np.cos(angle_rad)
-        normal_y = np.sin(angle_rad)
+        # Normal vector points toward land
+        # At 0°: land points north (up), so normal = (0, -1) in numpy coordinates
+        # At 90°: land points east (right), so normal = (1, 0) in numpy coordinates
+        # This gives us: normal_x = sin(angle), normal_y = -cos(angle)
+        normal_x = np.sin(angle_rad)
+        normal_y = -np.cos(angle_rad)
         
-        # Position the line so it cuts through the map at the desired depth
-        # Center the line and offset it based on coast_depth
+        # Position the line so it cuts through the map center
         center_x, center_y = 0.5, 0.5
-        offset = coast_depth - 0.5  # Offset from center
+        offset = coast_depth  # Offset from center
         
         # Distance from each point to the line
         distance_to_line = normal_x * (X - center_x) + normal_y * (Y - center_y) - offset
@@ -267,6 +276,7 @@ class AdvancedTerrainGenerator:
         coastline_noise = self._generate_coastline_noise(X, Y, params)
         
         # Create water mask: points on the "water side" of the line
+        # Water is on the side opposite to where the land points
         water_mask = distance_to_line + coastline_noise < 0
         
         # Apply sea level to water areas
@@ -565,7 +575,7 @@ class AdvancedTerrainGenerator:
         max_allowed_radius = min(
             center_x, 1.0 - center_x,  # Distance to left/right edges
             center_y, 1.0 - center_y   # Distance to top/bottom edges
-        ) * 0.85  # Leave 15% buffer for water
+        ) * 0.95  # Leave 15% buffer for water
         
         final_radius = np.minimum(final_radius, max_allowed_radius)
         
@@ -604,8 +614,8 @@ class AdvancedTerrainGenerator:
             np.minimum(Y_border, 1 - Y_border)   # Distance to top/bottom edges
         )
         
-        # Create natural water boundary - anything within 8% of edge becomes water
-        water_boundary_mask = edge_distance < 0.08
+        # Create natural water boundary - anything within 10% of edge becomes water
+        water_boundary_mask = edge_distance < 0.03
         base_elevation[water_boundary_mask] = 0.15  # Sea level
         
         return base_elevation
