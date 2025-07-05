@@ -29,16 +29,102 @@ A Python-based town/city generator and growth simulator with GUI interface that 
 ## Feature Specifications
 
 ### Terrain Generation
-**Terrain Types (Basic Set):**
-- Sand, Grass, Mud, Rock, Sea, Coast, Snow
+**Scale:** Settlement-appropriate areas (not continental scale)
+
+**Settlement Scale Reference:**
+- **Village**: <1,000 people, 5–15 km²
+- **Town**: 1,000–20,000 people, 15–50 km²
+- **City**: 20,000–500,000 people, 50–250 km²
+- **Urban/Metro Area**: >500,000 people, 250–2,000+ km²
+
+**Tile Scale:** Each tile represents approximately 6-8 meters, allowing for:
+- Individual buildings (1-4 tiles)
+- Roads and paths (1-2 tiles wide)
+- Parks and plazas (10-50 tiles)
+- Realistic urban density and layout
+
+**Terrain Types (Town Scale):**
+- **Grass**: General grassland/fields
+- **Mud**: Wetlands near water bodies
+- **Sand**: Dry areas, riverbanks, beaches
+- **Rock**: Steep slopes, exposed ridges
+- **Coast**: Edges of water bodies (lakes, rivers)
+- **Sea**: Lakes, ponds, rivers, streams
+- **Snow**: High elevation areas (if cold climate)
 - Extensible for future terrain types
 
 **User-Configurable Parameters:**
-- Land/water ratio
-- Rivers placement
-- Elevation variations
-- Ground type distribution
-- Vegetation density and types
+
+**Core Terrain Settings:**
+- **Map Size**: Settlement-appropriate sizes (powers of 2 for noise optimization)
+  - Village: 512×512–768×768 (5-15 km²)
+  - Town: 768×768–1024×1024 (15-50 km²)  
+  - City: 1024×1024–2048×2048 (50-250 km²)
+  - Metro: 2048×2048–4096×4096+ (250-2000+ km²)
+- **Elevation Variance**: 0.0-1.0 (flat plains to rolling hills - appropriate for settlement scale)
+- **Water Bodies**: 0-10 (number of lakes, ponds, major streams - scales with settlement size)
+- **Noise Scale**: 0.1-10.0 (size of terrain features)
+- **Random Seed**: Integer for reproducible generation
+
+**Climate Settings (Local Scale):**
+- **Base Temperature**: 0.0-1.0 (cold/temperate/warm climate)
+- **Moisture Level**: 0.0-1.0 (general wetness/dryness)
+- **Wind Direction**: 0-360° (compass control with arrow - North=0°, East=90°, etc.)
+- **Wind Strength**: 0.0-1.0 (how much wind affects local weather patterns)
+
+**Generation Algorithm:**
+
+**Three-Layer Noise System:**
+```python
+# Layer 1: Elevation (height map for hills/valleys)
+elevation_map = perlin_noise(scale=noise_scale, octaves=4)
+
+# Layer 2: Moisture (affected by water proximity + wind)
+moisture_map = perlin_noise(scale=noise_scale*0.7, octaves=3)
+
+# Layer 3: Temperature (elevation + coastal + wind effects)
+temperature_map = base_temperature - (elevation * lapse_rate) + wind_effects
+```
+
+**Wind System:**
+- **Wind Compass UI**: Circular compass control allowing user to set prevailing wind direction
+- **Orographic Effects**: Windward slopes get more moisture, leeward slopes create rain shadows
+- **Temperature Moderation**: Wind brings maritime influence from water bodies
+- **Realistic Scale**: Wind effects appropriate for town-scale geography
+
+**Water Flow System:**
+- **Downhill Flow**: Rivers and streams follow elevation gradients downhill
+- **Lake Connections**: Streams flow into and out of lakes realistically
+- **Drainage Networks**: Connected waterways that make hydrological sense
+- **Coastal Features**: Realistic shorelines and wetlands around water bodies
+
+**Terrain Assignment Logic:**
+```python
+def determine_terrain_type(elevation, moisture, temperature, distance_to_water):
+    if elevation < water_level:
+        return TERRAIN_SEA
+    elif distance_to_water < 0.05:  # Near water
+        return TERRAIN_COAST
+    elif temperature < 0.2:  # Cold areas
+        return TERRAIN_SNOW
+    elif moisture < 0.3:  # Dry areas
+        if temperature > 0.7:
+            return TERRAIN_SAND  # Hot + dry
+        else:
+            return TERRAIN_ROCK  # Cold + dry = rocky
+    elif moisture > 0.8:  # Very wet areas
+        return TERRAIN_MUD  # Wetlands
+    else:
+        return TERRAIN_GRASS  # Default grassland
+```
+
+**Generation Phases:**
+1. **Basic Elevation**: Generate hills, valleys, and ridges using Perlin noise
+2. **Water Placement**: Position lakes, ponds, and water sources
+3. **Wind Effects**: Apply orographic and temperature effects based on wind direction
+4. **River Generation**: Create realistic downhill water flow networks
+5. **Terrain Assignment**: Combine all factors to determine final terrain types
+6. **Post-Processing**: Smooth transitions and validate realistic placement
 
 ### City Layout & Building System
 **Building Categories:**

@@ -9,3 +9,34 @@
 2025-07-05 14:16:11 - townsim.modules.ui.main_window - INFO - Initializing main window
 2025-07-05 14:16:11 - townsim.modules.ui.main_window - INFO - Main window initialized successfully
 2025-07-05 14:16:20 - townsim.modules.ui.main_window - INFO - Generating terrain...
+2025-07-05 14:33:16 - townsim.modules.utils.logging_setup - INFO - Logging initialized - Level: INFO
+2025-07-05 14:33:16 - townsim.modules.utils.logging_setup - INFO - Log files stored in: C:\Other\Repos\GitHub\townsim_py\logs
+2025-07-05 14:33:16 - townsim.modules.terrain.terrain_generator - INFO - Generating terrain with size 64x64
+2025-07-05 14:33:16 - townsim.modules.terrain.terrain_generator - INFO - Terrain generation completed
+2025-07-05 14:33:16 - townsim.modules.terrain.terrain_generator - INFO - Generating terrain with size 32x32
+2025-07-05 14:33:16 - townsim.modules.terrain.terrain_generator - INFO - Terrain generation completed
+2025-07-05 14:33:16 - townsim.modules.terrain.terrain_generator - INFO - Generating terrain with size 32x32
+2025-07-05 14:33:16 - townsim.modules.terrain.terrain_generator - INFO - Terrain generation completed
+2025-07-05 14:33:16 - townsim.modules.terrain.terrain_generator - INFO - Generating terrain with size 32x32
+2025-07-05 14:33:16 - townsim.modules.terrain.terrain_generator - INFO - Terrain generation completed
+2025-07-05 14:33:16 - townsim.modules.terrain.terrain_generator - INFO - Generating terrain with size 32x32
+2025-07-05 14:33:16 - townsim.modules.terrain.terrain_generator - INFO - Terrain generation completed
+2025-07-05 14:33:16 - townsim.modules.terrain.terrain_generator - INFO - Generating terrain with size 32x32
+2025-07-05 14:33:17 - townsim.modules.terrain.terrain_generator - INFO - Terrain generation completed
+2025-07-05 14:33:47 - townsim.modules.utils.logging_setup - INFO - Logging initialized - Level: INFO
+2025-07-05 14:33:47 - townsim.modules.utils.logging_setup - INFO - Log files stored in: C:\Other\Repos\GitHub\townsim_py\logs
+2025-07-05 14:33:47 - townsim.modules.terrain.terrain_generator - INFO - Generating terrain with size 64x64
+2025-07-05 14:33:47 - townsim.modules.terrain.terrain_generator - INFO - Terrain generation completed
+2025-07-05 14:33:47 - townsim.modules.terrain.terrain_generator - INFO - Generating terrain with size 32x32
+2025-07-05 14:33:47 - townsim.modules.terrain.terrain_generator - INFO - Terrain generation completed
+2025-07-05 14:33:47 - townsim.modules.terrain.terrain_generator - INFO - Generating terrain with size 32x32
+2025-07-05 14:33:47 - townsim.modules.terrain.terrain_generator - INFO - Terrain generation completed
+2025-07-05 14:33:47 - townsim.modules.terrain.terrain_generator - INFO - Generating terrain with size 32x32
+2025-07-05 14:33:47 - townsim.modules.terrain.terrain_generator - INFO - Terrain generation completed
+2025-07-05 14:33:47 - townsim.modules.terrain.terrain_generator - INFO - Generating terrain with size 32x32
+2025-07-05 14:33:47 - townsim.modules.terrain.terrain_generator - INFO - Terrain generation completed
+2025-07-05 14:33:47 - townsim.modules.terrain.terrain_generator - INFO - Generating terrain with size 32x32
+2025-07-05 14:33:47 - townsim.modules.terrain.terrain_generator - INFO - Terrain generation completed
+2025-07-05 14:37:55 - townsim.modules.utils.logging_setup - INFO - Logging initialized - Level: INFO
+2025-07-05 14:37:55 - townsim.modules.utils.logging_setup - INFO - Log files stored in: C:\Other\Repos\GitHub\townsim_py\logs
+2025-07-05 14:37:55 - townsim.modules.terrain.terrain_generator - INFO - Generating terrain with size 512x512
