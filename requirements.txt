@@ -1,0 +1,28 @@
+# TownSim Python Dependencies
+
+# Core GUI Framework
+PyQt6>=6.6.0
+
+# Numerical Operations
+numpy>=1.24.0
+
+# Image Processing
+Pillow>=10.0.0
+
+# Terrain Generation
+noise>=1.2.2
+
+# Scientific Computing
+scipy>=1.11.0
+
+# Optional: Advanced Visualization (for debugging)
+matplotlib>=3.7.0
+
+# Optional: Video Export
+opencv-python>=4.8.0
+
+# Testing Framework
+pytest>=7.4.0
+
+# Development Dependencies
+pytest-qt>=4.2.0  # For PyQt6 testing 

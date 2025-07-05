@@ -1,0 +1,70 @@
+---
+alwaysApply: true
+description: "General project rules and guidelines"
+---
+
+# General Project Rules
+
+# 🧠 General Project Philosophy
+
+<!-- Code should be clean, modular, and easy to understand. Favor readability over clever tricks. -->
+<!-- Follow the KISS (Keep It Simple, Stupid) principle whenever possible. Avoid unnecessary complexity. -->
+<!-- Apply SOLID principles when designing classes or modules. Break responsibilities into small, focused parts. -->
+<!-- Comment your code where necessary, especially for logic that may not be obvious at a glance. Avoid over-commenting. -->
+<!-- Write small, single-purpose functions. Functions should generally do one thing and do it well. -->
+
+# 🧱 Python Coding Style
+
+<!-- Follow PEP8 style guidelines. Use snake_case for functions and variables, and PascalCase for class names. -->
+<!-- Type hints should be used for all public function signatures. -->
+<!-- Prefer dataclasses for structured data when appropriate. -->
+<!-- Avoid long files — split into modules once a file gets too long or handles multiple concerns. -->
+<!-- Don't import unused modules or leave commented-out code blocks in production files. -->
+
+# 🔁 Simulation Logic
+
+<!-- Encapsulate simulation state in classes (e.g., Village, Building, Population). Avoid using globals. -->
+<!-- The simulation should progress in ticks or turns. Each tick should be clearly defined and predictable. -->
+<!-- Prefer composition over inheritance for simulation logic. -->
+<!-- Simulation logic should be decoupled from the UI code. -->
+
+# 🎨 UI Integration (if applicable)
+
+<!-- UI should only display the simulation state and trigger events. Avoid embedding logic inside UI callbacks. -->
+<!-- Avoid unnecessary redraws or heavy operations during the tick cycle. -->
+
+# 🔍 Commenting & Documentation
+
+<!-- Add docstrings to all classes and public functions using triple quotes. -->
+<!-- Explain non-obvious logic inline using short comments. -->
+<!-- Do not comment obvious things (e.g., `# increment count by 1` is redundant for `count += 1`). -->
+<!-- Use TODO and FIXME comments where needed. Keep them actionable. -->
+
+# 🧪 Optional: Testing
+
+<!-- If tests are included, use pytest or unittest. -->
+<!-- Prefer testing critical logic first: e.g., population growth, building rules, resource limits. -->
+<!-- Test edge cases: empty village, overpopulation, no farms, etc. -->
+<!-- Keep tests in a `tests/` folder or as `_test.py` files. -->
+<!-- Write at least one test per major module if testing is enabled. -->
+
+# 📜 Optional: Logging
+
+<!-- Use the `logging` module instead of print statements for non-UI output. -->
+<!-- Logging should be modular and support levels (INFO, DEBUG, ERROR). -->
+<!-- Keep debug logging off by default unless in development mode. -->
+<!-- Prefer structured logs (e.g., logging key values at each simulation step). -->
+
+# 📦 Structure & Organization
+
+<!-- Keep simulation engine in its own folder/module (e.g., `simulation/`). -->
+<!-- GUI (if present) should be isolated in a `ui/` or `interface/` module. -->
+<!-- Entry point (e.g., `main.py`) should only bootstrap and wire together components. -->
+<!-- Avoid deeply nested directories unless absolutely necessary. -->
+
+# 🧹 Clean Code Habits
+
+<!-- Avoid magic numbers. Use constants or enums. -->
+<!-- Do not hardcode file paths, resource names, or config values. -->
+<!-- Remove any unused imports, commented-out code, or leftover debug prints before committing. -->
+<!-- Use list comprehensions and generators for clarity, but avoid nested or unreadable ones. -->

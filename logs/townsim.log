@@ -1,0 +1,11 @@
+2025-07-05 14:14:32 - townsim.modules.utils.logging_setup - INFO - Logging initialized - Level: INFO
+2025-07-05 14:14:32 - townsim.modules.utils.logging_setup - INFO - Log files stored in: C:\Other\Repos\GitHub\townsim_py\logs
+2025-07-05 14:14:32 - __main__ - INFO - Starting TownSim Python - CLI Mode: True
+2025-07-05 14:14:32 - townsim.modules.ui.cli_interface - INFO - Starting CLI interface
+2025-07-05 14:14:32 - townsim.modules.ui.cli_interface - INFO - CLI interface completed
+2025-07-05 14:16:11 - townsim.modules.utils.logging_setup - INFO - Logging initialized - Level: INFO
+2025-07-05 14:16:11 - townsim.modules.utils.logging_setup - INFO - Log files stored in: C:\Other\Repos\GitHub\townsim_py\logs
+2025-07-05 14:16:11 - __main__ - INFO - Starting TownSim Python - CLI Mode: False
+2025-07-05 14:16:11 - townsim.modules.ui.main_window - INFO - Initializing main window
+2025-07-05 14:16:11 - townsim.modules.ui.main_window - INFO - Main window initialized successfully
+2025-07-05 14:16:20 - townsim.modules.ui.main_window - INFO - Generating terrain...
