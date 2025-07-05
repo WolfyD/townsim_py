@@ -45,7 +45,7 @@
 - **Live Preview**: Saves terrain_preview.png for inspection
 
 ### **How to Use**
-1. Open the GUI: `python -m townsim.main --gui`
+1. Open the GUI: `python main.py`
 2. Select "Advanced Generator (Recommended)"
 3. Choose your preferred coastal type
 4. Adjust terrain smoothness slider

@@ -95,7 +95,7 @@ class MainWindow(QMainWindow):
         terrain_layout.addWidget(self.coastal_combo)
         
         # Terrain smoothness slider
-        from PyQt6.QtWidgets import QSlider
+        from PyQt6.QtWidgets import QSlider, QSpinBox
         self.smoothness_slider = QSlider(Qt.Orientation.Horizontal)
         self.smoothness_slider.setRange(0, 100)
         self.smoothness_slider.setValue(30)  # Default 0.3
@@ -103,6 +103,26 @@ class MainWindow(QMainWindow):
         self.smoothness_slider.valueChanged.connect(self._update_smoothness_label)
         terrain_layout.addWidget(self.smoothness_label)
         terrain_layout.addWidget(self.smoothness_slider)
+        
+        # Maximum lakes setting
+        self.max_lakes_spinbox = QSpinBox()
+        self.max_lakes_spinbox.setRange(0, 10)
+        self.max_lakes_spinbox.setValue(2)  # Default 2
+        terrain_layout.addWidget(QLabel("Maximum Lakes:"))
+        terrain_layout.addWidget(self.max_lakes_spinbox)
+        
+        # Random seed setting
+        from PyQt6.QtWidgets import QCheckBox, QLineEdit
+        self.use_random_seed_checkbox = QCheckBox("Use Random Seed")
+        self.use_random_seed_checkbox.setChecked(True)  # Default to random
+        self.use_random_seed_checkbox.toggled.connect(self._toggle_seed_input)
+        terrain_layout.addWidget(self.use_random_seed_checkbox)
+        
+        self.seed_input = QLineEdit()
+        self.seed_input.setPlaceholderText("Enter seed (e.g. 42)")
+        self.seed_input.setEnabled(False)  # Disabled when using random seed
+        terrain_layout.addWidget(QLabel("Seed (for reproducible results):"))
+        terrain_layout.addWidget(self.seed_input)
         
         # Generation buttons
         btn_generate_terrain = QPushButton("Generate Terrain")
@@ -200,46 +220,77 @@ class MainWindow(QMainWindow):
         smoothness = value / 100.0
         self.smoothness_label.setText(f"Terrain Smoothness: {smoothness:.1f}")
     
+    def _toggle_seed_input(self, use_random: bool) -> None:
+        """Toggle the seed input field based on random seed checkbox."""
+        self.seed_input.setEnabled(not use_random)
+        if use_random:
+            self.seed_input.clear()
+    
     def _generate_terrain(self) -> None:
         """Generate new terrain."""
         self.logger.info("Generating terrain...")
         self.status_bar.showMessage("Generating terrain...")
         
         try:
+            self.logger.debug("Starting terrain generation process...")
+            
             # Get parameters from UI
             generator_type = self.generator_combo.currentData()
             coastal_type = self.coastal_combo.currentData()
             smoothness = self.smoothness_slider.value() / 100.0
+            max_lakes = self.max_lakes_spinbox.value()
+            
+            self.logger.debug(f"Parameters: type={generator_type}, coastal={coastal_type}, smoothness={smoothness}, lakes={max_lakes}")
+            
+            # Determine random seed
+            if self.use_random_seed_checkbox.isChecked():
+                import random
+                random_seed = random.randint(1, 999999)
+                self.logger.info(f"Using random seed: {random_seed}")
+            else:
+                try:
+                    random_seed = int(self.seed_input.text()) if self.seed_input.text() else 42
+                except ValueError:
+                    random_seed = 42
+                    self.logger.warning("Invalid seed input, using default seed 42")
             
             if generator_type == "advanced":
+                self.logger.debug("Importing advanced generator...")
                 # Use advanced generator
                 from ..terrain.advanced_terrain_generator import (
                     AdvancedTerrainGenerator, AdvancedTerrainParameters
                 )
                 
+                self.logger.debug("Creating advanced parameters...")
                 params = AdvancedTerrainParameters(
                     map_size=512,
-                    random_seed=42,
+                    random_seed=random_seed,
                     coastal_type=coastal_type,
                     terrain_smoothness=smoothness,
+                    max_lakes=max_lakes,
                     noise_scale=5.0,
                     elevation_variance=0.7
                 )
                 
+                self.logger.debug("Creating advanced generator instance...")
                 generator = AdvancedTerrainGenerator()
+                
+                self.logger.debug("Calling generate_terrain...")
                 terrain_map = generator.generate_terrain(params)
                 
                 self.logger.info(f"Advanced terrain generated successfully")
-                self.status_bar.showMessage("Advanced terrain generated successfully!")
+                seed_msg = f" (seed: {random_seed})" if self.use_random_seed_checkbox.isChecked() else ""
+                self.status_bar.showMessage(f"Advanced terrain generated successfully!{seed_msg}")
                 
             else:
+                self.logger.debug("Using basic generator...")
                 # Use basic generator
                 from ..terrain.terrain_generator import TerrainGenerator
                 from ..terrain.terrain_parameters import TerrainParameters
                 
                 params = TerrainParameters(
                     map_size=512,
-                    random_seed=42,
+                    random_seed=random_seed,
                     noise_scale=5.0,
                     elevation_variance=0.7
                 )
@@ -248,15 +299,28 @@ class MainWindow(QMainWindow):
                 terrain_map = generator.generate_terrain(params)
                 
                 self.logger.info(f"Basic terrain generated successfully")
-                self.status_bar.showMessage("Basic terrain generated successfully!")
+                seed_msg = f" (seed: {random_seed})" if self.use_random_seed_checkbox.isChecked() else ""
+                self.status_bar.showMessage(f"Basic terrain generated successfully!{seed_msg}")
             
+            self.logger.debug("Saving terrain preview...")
             # TODO: Display terrain in map view
             # For now, just save to file for inspection
             self._save_terrain_preview(terrain_map)
+            self.logger.debug("Terrain generation process completed successfully")
             
         except Exception as e:
+            import traceback
             self.logger.error(f"Terrain generation failed: {e}")
+            self.logger.debug(f"Full traceback: {traceback.format_exc()}")
             self.status_bar.showMessage(f"Terrain generation failed: {e}")
+            
+            # Try to show a more user-friendly error message
+            from PyQt6.QtWidgets import QMessageBox
+            QMessageBox.critical(
+                self,
+                "Terrain Generation Error",
+                f"Failed to generate terrain:\n\n{str(e)}\n\nCheck the logs for more details."
+            )
     
     def _save_terrain_preview(self, terrain_map) -> None:
         """Save terrain preview to file."""
