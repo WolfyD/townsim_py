@@ -76,8 +76,33 @@ class MainWindow(QMainWindow):
         terrain_group = QGroupBox("Terrain Generation")
         terrain_layout = QVBoxLayout(terrain_group)
         
-        # TODO: Add terrain parameter controls
-        terrain_layout.addWidget(QLabel("Terrain controls will be added here"))
+        # Generator type selection
+        from PyQt6.QtWidgets import QComboBox
+        self.generator_combo = QComboBox()
+        self.generator_combo.addItem("Advanced Generator (Recommended)", "advanced")
+        self.generator_combo.addItem("Basic Generator", "basic")
+        terrain_layout.addWidget(QLabel("Generator Type:"))
+        terrain_layout.addWidget(self.generator_combo)
+        
+        # Coastal type selection (for advanced generator)
+        from ..terrain.advanced_terrain_generator import CoastalType
+        self.coastal_combo = QComboBox()
+        self.coastal_combo.addItem("Random", CoastalType.RANDOM)
+        self.coastal_combo.addItem("Landlocked", CoastalType.LANDLOCKED)
+        self.coastal_combo.addItem("Coastal", CoastalType.COASTAL)
+        self.coastal_combo.addItem("Island", CoastalType.ISLAND)
+        terrain_layout.addWidget(QLabel("Coastal Type:"))
+        terrain_layout.addWidget(self.coastal_combo)
+        
+        # Terrain smoothness slider
+        from PyQt6.QtWidgets import QSlider
+        self.smoothness_slider = QSlider(Qt.Orientation.Horizontal)
+        self.smoothness_slider.setRange(0, 100)
+        self.smoothness_slider.setValue(30)  # Default 0.3
+        self.smoothness_label = QLabel("Terrain Smoothness: 0.3")
+        self.smoothness_slider.valueChanged.connect(self._update_smoothness_label)
+        terrain_layout.addWidget(self.smoothness_label)
+        terrain_layout.addWidget(self.smoothness_slider)
         
         # Generation buttons
         btn_generate_terrain = QPushButton("Generate Terrain")
@@ -170,14 +195,104 @@ class MainWindow(QMainWindow):
         self.status_bar = self.statusBar()
         self.status_bar.showMessage("Ready")
     
+    def _update_smoothness_label(self, value: int) -> None:
+        """Update the smoothness label when slider changes."""
+        smoothness = value / 100.0
+        self.smoothness_label.setText(f"Terrain Smoothness: {smoothness:.1f}")
+    
     def _generate_terrain(self) -> None:
         """Generate new terrain."""
         self.logger.info("Generating terrain...")
         self.status_bar.showMessage("Generating terrain...")
         
-        # TODO: Implement terrain generation
-        # For now, just show a message
-        self.status_bar.showMessage("Terrain generation - Coming soon!")
+        try:
+            # Get parameters from UI
+            generator_type = self.generator_combo.currentData()
+            coastal_type = self.coastal_combo.currentData()
+            smoothness = self.smoothness_slider.value() / 100.0
+            
+            if generator_type == "advanced":
+                # Use advanced generator
+                from ..terrain.advanced_terrain_generator import (
+                    AdvancedTerrainGenerator, AdvancedTerrainParameters
+                )
+                
+                params = AdvancedTerrainParameters(
+                    map_size=512,
+                    random_seed=42,
+                    coastal_type=coastal_type,
+                    terrain_smoothness=smoothness,
+                    noise_scale=5.0,
+                    elevation_variance=0.7
+                )
+                
+                generator = AdvancedTerrainGenerator()
+                terrain_map = generator.generate_terrain(params)
+                
+                self.logger.info(f"Advanced terrain generated successfully")
+                self.status_bar.showMessage("Advanced terrain generated successfully!")
+                
+            else:
+                # Use basic generator
+                from ..terrain.terrain_generator import TerrainGenerator
+                from ..terrain.terrain_parameters import TerrainParameters
+                
+                params = TerrainParameters(
+                    map_size=512,
+                    random_seed=42,
+                    noise_scale=5.0,
+                    elevation_variance=0.7
+                )
+                
+                generator = TerrainGenerator()
+                terrain_map = generator.generate_terrain(params)
+                
+                self.logger.info(f"Basic terrain generated successfully")
+                self.status_bar.showMessage("Basic terrain generated successfully!")
+            
+            # TODO: Display terrain in map view
+            # For now, just save to file for inspection
+            self._save_terrain_preview(terrain_map)
+            
+        except Exception as e:
+            self.logger.error(f"Terrain generation failed: {e}")
+            self.status_bar.showMessage(f"Terrain generation failed: {e}")
+    
+    def _save_terrain_preview(self, terrain_map) -> None:
+        """Save terrain preview to file."""
+        try:
+            from PIL import Image
+            import numpy as np
+            from ..terrain.terrain_types import TerrainType
+            
+            # Create RGB image
+            size = terrain_map.tiles.shape[0]
+            img_array = np.zeros((size, size, 3), dtype=np.uint8)
+            
+            # Color mapping for terrain types
+            colors = {
+                TerrainType.GRASS: (34, 139, 34),
+                TerrainType.MUD: (139, 69, 19),
+                TerrainType.SAND: (238, 203, 173),
+                TerrainType.ROCK: (105, 105, 105),
+                TerrainType.COAST: (255, 218, 185),
+                TerrainType.SEA: (70, 130, 180),
+                TerrainType.SNOW: (255, 250, 250)
+            }
+            
+            # Apply colors
+            for terrain_type, color in colors.items():
+                mask = terrain_map.tiles == terrain_type
+                img_array[mask] = color
+            
+            # Save image
+            img = Image.fromarray(img_array)
+            img.save("terrain_preview.png")
+            
+            self.logger.info("Terrain preview saved as terrain_preview.png")
+            
+        except Exception as e:
+            self.logger.error(f"Failed to save terrain preview: {e}")
     
     def _new_simulation(self) -> None:
         """Start a new simulation."""

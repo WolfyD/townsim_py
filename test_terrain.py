@@ -7,6 +7,7 @@ This script tests the terrain generation system and creates a simple visualizati
 
 import sys
 from pathlib import Path
+import random
 
 # Add the src directory to the path
 sys.path.insert(0, str(Path(__file__).parent / "src"))
@@ -35,7 +36,7 @@ def test_terrain_generation():
     
     # Test with default parameters
     print("\n1. Testing with default parameters...")
-    params = TerrainParameters(map_size=64, random_seed=42)
+    params = TerrainParameters(map_size=64, random_seed=random.randint(0, 1000))
     terrain_map = generator.generate_terrain(params)
     
     print(f"   Generated terrain: {terrain_map.width}x{terrain_map.height}")
