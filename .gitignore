@@ -1,1 +1,18 @@
-logs/townsim.log
+logs/*
+src/townsim/__pycache__/*
+src/townsim/modules/ui/__pycache__/*
+src/townsim/modules/terrain/__pycache__/*
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Distribution / packaging
+*.egg-info/
+build/
+dist/
+
+# Virtual environments
+venv/
+.env/

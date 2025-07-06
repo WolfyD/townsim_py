@@ -66,6 +66,9 @@ class AdvancedTerrainParameters(TerrainParameters):
     noise_amplitudes: List[float] = None  # Will default to [1, 0.5, 0.25, 0.125]
     elevation_exponent: float = 1.2  # For valley/peak redistribution
     
+    # Terrain type configuration
+    terrain_type: str = "hilly"  # flat, hilly, mountainous, mixed
+    
     # Debug options
     show_debug_markers: bool = False  # Show red segment markers for debugging
 
@@ -219,33 +222,135 @@ class AdvancedTerrainGenerator:
         X, Y = np.meshgrid(x, y)
         
         if coastal_config["type"] == CoastalType.LANDLOCKED:
-            # Uniform base elevation for landlocked areas
-            base_elevation = np.full((size, size), 0.6)
+            # For landlocked areas, create gentle elevation gradient from edges to center
+            base_elevation = self._create_landlocked_elevation_gradient(size, X, Y, params)
             
         elif coastal_config["type"] == CoastalType.COASTAL:
-            # Start with land elevation
-            base_elevation = np.full((size, size), 0.6)
-            
-            # Create angled coastline with varied edges
+            # Create angled coastline with elevation gradient away from water
             coast_angle = coastal_config["coast_angle"]
             coast_depth = coastal_config["coast_depth"]
             
-            # Create the angled coastline boundary
-            base_elevation = self._create_angled_coastline(
-                base_elevation, coast_angle, coast_depth, X, Y, params
+            # Create the angled coastline boundary with elevation gradient
+            base_elevation = self._create_angled_coastline_with_gradient(
+                coast_angle, coast_depth, X, Y, params
             )
                     
         elif coastal_config["type"] == CoastalType.ISLAND:
-            # Island with varied, natural boundary
+            # Island with varied, natural boundary and elevation gradient
             center_x, center_y = coastal_config["island_center"]
             island_radius = coastal_config["island_size"]
             
-            # Create varied island boundary with noise
-            base_elevation = self._create_natural_island(
+            # Create varied island boundary with elevation gradient from shore to center
+            base_elevation = self._create_natural_island_with_gradient(
                 size, center_x, center_y, island_radius, X, Y, params
             )
         
         return base_elevation
+    
+    def _create_landlocked_elevation_gradient(self, size: int, X: np.ndarray, Y: np.ndarray, 
+                                            params: AdvancedTerrainParameters) -> np.ndarray:
+        """Create elevation gradient for landlocked areas - higher toward center."""
+        # Distance from center
+        center_x, center_y = 0.5, 0.5
+        distance_from_center = np.sqrt((X - center_x)**2 + (Y - center_y)**2)
+        
+        # Distance from edges
+        edge_distance = np.minimum(
+            np.minimum(X, 1.0 - X),
+            np.minimum(Y, 1.0 - Y)
+        )
+        
+        # Create base elevation that's higher toward center and away from edges
+        # Scale edge distance to 0-1 range
+        max_edge_distance = 0.5  # Maximum possible edge distance
+        normalized_edge_distance = edge_distance / max_edge_distance
+        
+        # Base elevation increases with distance from edges
+        base_elevation = 0.4 + 0.4 * normalized_edge_distance  # 0.4 to 0.8 range
+        
+        # Ensure rivers can flow toward edges
+        return base_elevation
+    
+    def _create_angled_coastline_with_gradient(self, coast_angle: float, coast_depth: float, 
+                                             X: np.ndarray, Y: np.ndarray, 
+                                             params: AdvancedTerrainParameters) -> np.ndarray:
+        """Create angled coastline with elevation gradient away from water."""
+        # Convert angle to radians
+        angle_rad = np.radians(coast_angle)
+        
+        # Normal vector points toward land
+        normal_x = np.sin(angle_rad)
+        normal_y = -np.cos(angle_rad)
+        
+        # Position the line so it cuts through the map center
+        center_x, center_y = 0.5, 0.5
+        offset = coast_depth  # Offset from center
+        
+        # Distance from each point to the coastline
+        distance_to_line = normal_x * (X - center_x) + normal_y * (Y - center_y) - offset
+        
+        # Add noise to make the coastline more natural
+        coastline_noise = self._generate_coastline_noise(X, Y, params)
+        
+        # Create water mask: points on the "water side" of the line
+        water_mask = distance_to_line + coastline_noise < 0
+        
+        # Create elevation gradient away from water
+        # Land elevation increases with distance from coastline
+        land_distance = np.maximum(0, distance_to_line + coastline_noise)
+        
+        # Create elevation gradient
+        elevation = np.full_like(X, 0.15)  # Sea level for water areas
+        
+        # Land areas: elevation increases with distance from water
+        # Scale to reasonable elevation range (0.3 to 0.8)
+        max_land_distance = 0.7  # Approximate maximum distance from coastline
+        normalized_distance = np.minimum(land_distance / max_land_distance, 1.0)
+        elevation[~water_mask] = 0.3 + 0.5 * normalized_distance[~water_mask]
+        
+        # Apply smoothing to coastline transitions
+        elevation = self._smooth_coastline_transitions(elevation, water_mask)
+        
+        return elevation
+    
+    def _create_natural_island_with_gradient(self, size: int, center_x: float, center_y: float, 
+                                           island_radius: float, X: np.ndarray, Y: np.ndarray,
+                                           params: AdvancedTerrainParameters) -> np.ndarray:
+        """Create natural island with elevation gradient from shore to center."""
+        # Distance from island center
+        distance_from_center = np.sqrt((X - center_x)**2 + (Y - center_y)**2)
+        
+        # Basic island shape
+        base_island_mask = distance_from_center <= island_radius
+        
+        # Add noise for natural edges
+        island_noise = self._generate_island_shape_noise(X, Y, center_x, center_y, params)
+        edge_noise = self._generate_island_edge_noise(X, Y, center_x, center_y, params)
+        
+        # Create natural island boundary
+        island_boundary = island_radius + island_noise + edge_noise
+        natural_island_mask = distance_from_center <= island_boundary
+        
+        # Create elevation gradient from shore to center
+        elevation = np.full_like(X, 0.15)  # Sea level for water areas
+        
+        # Land areas: elevation increases toward center
+        # Maximum elevation at center, minimum at shore
+        for i in range(size):
+            for j in range(size):
+                if natural_island_mask[i, j]:
+                    # Distance from shore (normalized)
+                    shore_distance = max(0, island_boundary[i, j] - distance_from_center[i, j])
+                    normalized_shore_distance = shore_distance / island_radius
+                    
+                    # Elevation increases toward center
+                    elevation[i, j] = 0.25 + 0.6 * normalized_shore_distance  # 0.25 to 0.85 range
+        
+        # Apply smoothing to island transitions
+        water_mask = ~natural_island_mask
+        elevation = self._apply_island_smoothing(elevation, water_mask)
+        
+        return elevation
     
     def _create_angled_coastline(self, elevation: np.ndarray, coast_angle: float, 
                                 coast_depth: float, X: np.ndarray, Y: np.ndarray, 
@@ -1075,21 +1180,66 @@ class AdvancedTerrainGenerator:
         coastal_mask = (elevation > 0.2) & (elevation <= 0.3)
         terrain_types[coastal_mask] = TerrainType.COAST
         
-        # Elevation-based land assignment
-        low_land_mask = (elevation > 0.3) & (elevation <= 0.5)
+        # Enhanced elevation-based biome assignment
+        # Adjust thresholds based on terrain type
+        if params.terrain_type == "flat":
+            # Flat terrain - higher grass threshold, less rock
+            grass_threshold = 0.7
+            rock_threshold = 0.8
+            snow_threshold = 0.9
+        elif params.terrain_type == "hilly":
+            # Hilly terrain - moderate thresholds
+            grass_threshold = 0.6
+            rock_threshold = 0.75
+            snow_threshold = 0.85
+        elif params.terrain_type == "mountainous":
+            # Mountainous terrain - lower grass threshold, more rock/snow
+            grass_threshold = 0.5
+            rock_threshold = 0.65
+            snow_threshold = 0.8
+        elif params.terrain_type == "mixed":
+            # Mixed terrain - varied thresholds
+            grass_threshold = 0.55
+            rock_threshold = 0.7
+            snow_threshold = 0.82
+        else:
+            # Default thresholds
+            grass_threshold = 0.6
+            rock_threshold = 0.75
+            snow_threshold = 0.85
+        
+        # Low elevation areas - fertile land for farming
+        low_land_mask = (elevation > 0.3) & (elevation <= grass_threshold)
         terrain_types[low_land_mask] = TerrainType.GRASS
         
-        mid_land_mask = (elevation > 0.5) & (elevation <= 0.7)
-        terrain_types[mid_land_mask] = TerrainType.GRASS
+        # Some areas might be muddy if very low elevation
+        muddy_mask = (elevation > 0.25) & (elevation <= 0.35)
+        # Add some randomness for mud patches
+        np.random.seed(params.random_seed + 1000)
+        random_mud = np.random.random(muddy_mask.shape) < 0.1  # 10% chance
+        mud_final_mask = muddy_mask & random_mud
+        terrain_types[mud_final_mask] = TerrainType.MUD
         
-        high_land_mask = (elevation > 0.7) & (elevation <= 0.85)
-        terrain_types[high_land_mask] = TerrainType.ROCK
+        # Sandy areas near coasts
+        sandy_mask = (elevation > 0.3) & (elevation <= 0.4)
+        # Add some randomness for sand patches near coasts
+        np.random.seed(params.random_seed + 2000)
+        random_sand = np.random.random(sandy_mask.shape) < 0.15  # 15% chance
+        sand_final_mask = sandy_mask & random_sand
+        terrain_types[sand_final_mask] = TerrainType.SAND
         
-        # Mountain peaks
-        mountain_mask = elevation > 0.85
-        terrain_types[mountain_mask] = TerrainType.ROCK
+        # Higher elevation areas - rocky terrain (not suitable for farming)
+        rock_mask = (elevation > rock_threshold) & (elevation <= snow_threshold)
+        terrain_types[rock_mask] = TerrainType.ROCK
         
-        # TODO: Add moisture and temperature considerations for more diverse biomes
+        # Mountain peaks and very high areas - snow (definitely not farmable)
+        snow_mask = elevation > snow_threshold
+        terrain_types[snow_mask] = TerrainType.SNOW
+        
+        # Reset random seed
+        np.random.seed(params.random_seed)
+        
+        self.logger.debug(f"Terrain assignment - Grass: {grass_threshold:.2f}, Rock: {rock_threshold:.2f}, Snow: {snow_threshold:.2f}")
         
         return terrain_types
     
